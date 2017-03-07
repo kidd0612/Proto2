@@ -26,7 +26,7 @@ public class GameUIManager : SingleTon<GameUIManager> {
     public GameObject[] gfObjs;
     public Sprite[] gfImages;
     public GameObject cutInObj;
-
+    public Sprite[] cutInImgs;
 
     public Sprite returnImg;
     public Sprite kabuseta;
@@ -55,18 +55,18 @@ public class GameUIManager : SingleTon<GameUIManager> {
         //변수 초기화
         //life = 1000f;
      //   minusLife = 0;
-        lifeBar.fillAmount = 1f;
+        //lifeBar.fillAmount = 1f;
         currentDummy = 0;
         //UI초기화 함수
         setScoreUI();
 
         //이펙트 초기화
-
+        InitEffect();
         //게임 타이머 스타트
-        StopCoroutine("gameTimer");
-        StartCoroutine("gameTimer");
+        timerStart();
     }
 
+    //-------------------------------일시정지시 타이머 계속 움직임
     IEnumerator gameTimer()
     {
         do
@@ -75,7 +75,7 @@ public class GameUIManager : SingleTon<GameUIManager> {
             yield return new WaitForSeconds(1f);
             timeLimitPlusMinus(-1);
         }
-        while (_timeLimit > 0);
+        while (_timeLimit > 0 && GameManager.instance.GS == GameManager.GameState.Play);
     }
     //데미지라인에 가면 타임 -1초
     public void timeLimitPlusMinus(int _time)
@@ -88,6 +88,11 @@ public class GameUIManager : SingleTon<GameUIManager> {
         {
             GameManager.instance.GameOver();
         }
+    }
+    public void timerStart()
+    {
+        StopCoroutine("gameTimer");
+        StartCoroutine("gameTimer");
     }
     /*
     public IEnumerator lifeGaugeMinus()
@@ -110,6 +115,21 @@ public class GameUIManager : SingleTon<GameUIManager> {
     //이펙트 초기화 함수인데 0.5초만에 완료되다보니 아마 없어도 될듯?
     void InitEffect()
     {
+        //분노모드 이펙트 초기화 >> i는 채팅박스 갯수만큼
+        for(int i = 0; i < MsgMoveManager.instance.chatBox.Count; i++)
+        {
+            rageModEffectEnd(i);
+            /*
+             * //rageModEffectEnd에 전부 있는 기능이므로 문제없으면 삭제해도 될듯
+            //itween 끄기
+            iTween2.Stop(gfObjs[i].transform.GetChild(3).gameObject);
+            // 스케일 조정
+            gfObjs[i].transform.GetChild(3).gameObject.transform.localScale = new Vector3(1f,1f,1f);
+            //액티브 false
+            gfObjs[i].transform.GetChild(3).gameObject.SetActive(false);
+            */
+        }
+        /*
         for(int i = 0; i < heartDummies.Length; i++)
         {
             for (int j = 0; j < 3; j++)
@@ -117,14 +137,16 @@ public class GameUIManager : SingleTon<GameUIManager> {
                 //heartDummies[i].transform.GetChild(j).gameObject
             }
         }
+        */
     }
 
-    //게임오버 유아이 
+    //게임오버 UI
     public void activeGameOverUI()
     {
         gameOverUI.SetActive(true);
     }
 
+    //스코어 UI
     public void setScoreUI()
     {
         scoreTxt.text = GameManager.instance.nokoriMsg.ToString() + "個";
@@ -133,6 +155,7 @@ public class GameUIManager : SingleTon<GameUIManager> {
 
     #region effect관련
     //이펙트 위치 셋팅후 -> 코루틴 애니메이션 실행
+    //메시지 지웠을때 나오는 이펙트
     public void startEffect(int _msgBoxIdx)
     {
         //하트의 랜덤위치 지정을 위한 임시 변수
@@ -167,6 +190,7 @@ public class GameUIManager : SingleTon<GameUIManager> {
         //겹치는 이미지로 바꾸고
         _msgBox.GetComponent<Image>().sprite = kabuseta;
         setGfEffect(_msgBoxIdx);
+
         //실제 이펙트 코루틴
         StartCoroutine(effectAnim(_msgBox, currentDummy));
         //코루틴 실행시키고 바로 올리기 -> 코루틴이 안끝나도 다음더미가 바로 실행될수있게
@@ -254,6 +278,7 @@ public class GameUIManager : SingleTon<GameUIManager> {
         }
     }
     /*
+     * 지정된 위치에 있는걸 표시하는 것 뿐이라 굳이 필요 없음
     void setGfEffectPos(int _gfNum)
     {
         //하트의 랜덤위치 지정을 위한 임시 변수
@@ -391,10 +416,14 @@ public class GameUIManager : SingleTon<GameUIManager> {
 
     IEnumerator cutInEffect()
     {
+        //컷인 이미지 세팅------*****************************
+        cutInObj.transform.GetChild(0).GetComponent<Image>().sprite = cutInImgs[MsgMoveManager.instance.rageModeIdx[0]];
+        //컷인 위치 세팅
         Vector3 tmpPos = cutInObj.transform.position;
         float width = cutInObj.GetComponent<RectTransform>().rect.width;
         GameObject tmpOb = cutInObj.transform.GetChild(0).gameObject;
 
+        //setActive True
         cutInObj.SetActive(true);
         tmpOb.transform.position = new Vector3(tmpPos.x + width/2 ,tmpPos.y,tmpPos.z);
 

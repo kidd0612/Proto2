@@ -10,11 +10,16 @@ public class MsgMoveManager : SingleTon<MsgMoveManager>
     
     //각 레벨별 다이얼로그 패널(2인용 3인용 4인용)
     public GameObject[] dialogPanel;
-    List<GameObject> chatBox = new List<GameObject>();
+
+    [System.NonSerialized]
+    public List<GameObject> chatBox = new List<GameObject>();
 
     //몇번째 여자친구의 메시지를 움직일지 저장해놓는 리스트
     List<int> chatBoxIdx = new List<int>();
+    //몇번째 여자친구를 분노모드 할지
     public List<int> rageModeIdx = new List<int>();
+    //여자친구 몇초 분노모드 남았는지
+    public List<int> rageRemainSec = new List<int>();
 
     [System.NonSerialized]
     public GameObject[] msgBox;
@@ -30,6 +35,7 @@ public class MsgMoveManager : SingleTon<MsgMoveManager>
 
     public Sprite[] msgImg;
 
+    //메시지 가로 세로 길이 변수
     [System.NonSerialized]
     public float msgWidth;
     [System.NonSerialized]
@@ -37,15 +43,18 @@ public class MsgMoveManager : SingleTon<MsgMoveManager>
 
     public int[] moveCount;
     bool rageMode = false;
-    bool rageModeEnd = true;
+    public bool rageModeEnd = true;
 
+    //일제송신 
     bool returnAllChance = false;
     public Sprite returnAllImg;
 
     float msgMoveTime = 1.5f;
     float msgMovingTime = .5f;
     int level;
-    
+
+
+    #region about Initialize
     public void Init()
     {
         levelSet();
@@ -83,6 +92,7 @@ public class MsgMoveManager : SingleTon<MsgMoveManager>
         level = GameManager.instance.story;
     }
     
+
     void moveCountSet()
     {
         moveCount = new int[chatBox.Count];
@@ -156,6 +166,7 @@ public class MsgMoveManager : SingleTon<MsgMoveManager>
         }
     }
     //init func
+    #endregion
 
     public void allMsgStop()
     {
@@ -186,37 +197,46 @@ public class MsgMoveManager : SingleTon<MsgMoveManager>
         StartCoroutine("rageModeTimer");
         StartCoroutine("moveMsgTimer");
     }
-
+    //컷ㅎ인을 바로 실행시키면 stopAllCoroutine이 비정상적으로 작동하므려 따로 함수 뺴둠
+    //틀리면 발동하게 수정
     void readyRageMode()
     {
         StopAllCoroutines();
         StartCoroutine("rageModeCutInWait");
     }
 
+    //틀렸을때 불러오는 함수
+    public void setRageMode(int _idx)
+    {
+        rageMode = true;
+
+        rageModeIdx.Add(_idx);
+        chatBoxIdx.Remove(_idx);
+        
+        //분노모드가 끝나지 않음을 알리는 불변수
+        rageModeEnd = false;
+
+        readyRageMode();
+    }
+
     #region // move func
     IEnumerator moveMsgTimer()
     {
-       
-
+     
         do
         {
+            /*
             //분노모드이면
             if (rageMode)
             {
-                //몇번 채팅창을 분노대상으로할지 
-                int tmp;
-                tmp = UnityEngine.Random.Range(0, 4);
-                rageModeIdx.Add(tmp);
-                chatBoxIdx.Remove(tmp);
-
-                //분노모드가 끝나지 않음을 알리는 불변수
-                rageModeEnd = false;
-                //
+                
                 readyRageMode();
                 //rageModeStart();
             }
             else
                 moveMsg(chatBoxIdx);
+                */
+            moveMsg(chatBoxIdx);
 
             /*
             //문제 출제
@@ -259,6 +279,7 @@ public class MsgMoveManager : SingleTon<MsgMoveManager>
             */
             yield return new WaitForSeconds(msgMoveTime);
 
+            /*
             //*****분노모드는 4인일때만 발동하게한들어야함
             //분노모드가아니고 4인이상일때
             if (rageModeEnd && chatBoxIdx.Count > 3)
@@ -267,8 +288,7 @@ public class MsgMoveManager : SingleTon<MsgMoveManager>
                 rageMode = UnityEngine.Random.Range(1, 101) % 5 == 0 ? true : false;
 
             }
-
-
+            */
 
         } while (true);
         
@@ -281,7 +301,7 @@ public class MsgMoveManager : SingleTon<MsgMoveManager>
     void moveMsg(List<int> _list)
     {
         float _movingTime;
-
+        
         //분노모드일때 아닐때 시간 세팅
         if (rageMode)
         {
@@ -291,6 +311,7 @@ public class MsgMoveManager : SingleTon<MsgMoveManager>
         {
             _movingTime = msgMovingTime;
         }
+        
 
         //움직이는 함수
         for (int j = 0; j < _list.Count; j++)
@@ -314,8 +335,9 @@ public class MsgMoveManager : SingleTon<MsgMoveManager>
                     returnAllChance = true;
                     //전체송신 버튼으로 이미지 바꿈
                     msgBox[(_id * 7) + ((moveCount[_id] + 5) % 7)].GetComponent<Image>().sprite = returnAllImg;
+                  
                     //*****************************************************분노모드 들어가면 모든 코루틴이 꺼져서 이것도꺼짐
-                    StartCoroutine("returnAllChanceTimer");
+                   // StartCoroutine("returnAllChanceTimer");
 
                 }
                 else
@@ -378,7 +400,7 @@ public class MsgMoveManager : SingleTon<MsgMoveManager>
         }
 
         rageModeIdx.Clear();
-
+        
         rageModeEnd = true;
 
         //다시 메시지 시작
@@ -388,6 +410,7 @@ public class MsgMoveManager : SingleTon<MsgMoveManager>
 
     #endregion
     //**************************************일제송신 안누르고 그냥 내버려뒀을시 화면밖으로 나간후 false로 바꿔주는 설정도 해야함
+    //call back Func 
     //일제송신용 -버튼다운 내지는 클릭
     public void returnAll(int _idx)
     {
@@ -426,6 +449,8 @@ public class MsgMoveManager : SingleTon<MsgMoveManager>
     }
 
     //********************************************분노모드 나오면 이것도꺼져서 다시 세팅해야함
+    //------------------------메시지 움직이는 함수에서 페이드 아웃하기전에 이미지 확인해서 false로 만드는걸로해도 될듯
+    //----------------------조건 ( 이미지가 일제송신이고 이미지가 불투명하면(알파값이 1이면) 
     IEnumerator returnAllChanceTimer()
     {
         //일제송신 클릭안했을시 10초후에 false로 만듬
@@ -437,23 +462,9 @@ public class MsgMoveManager : SingleTon<MsgMoveManager>
     {
         int tmp = UnityEngine.Random.Range(0, 3);// GameManager.instance.returnStamp.Length);
       
-        msgBox[(_idx * 7) + ((moveCount[_idx] + 5) % 7)].GetComponent<Image>().sprite = GameManager.instance.returnStamp[tmp].GetComponent<Image>().sprite;
+        msgBox[(_idx * 7) + ((moveCount[_idx] + 5) % 7)].GetComponent<Image>().sprite = GameManager.instance.returnStamp[tmp].transform.GetChild(0).GetComponent<Image>().sprite;
         
     }
 
-    /*
-    void checkDeadLine(int _idx)
-    {
-        
-       //투명도가 0이아닐경우
-       if (msgBox[(_idx * 7) +((moveCount[_idx]) % 7)].GetComponent<Image>().color.a != 0)
-       {
-            GameUIManager.instance.minusLife++;
-       }
-      
-        StartCoroutine(GameUIManager.instance.lifeGaugeMinus());
-        Debug.Log("checkDL");
 
-    }
-    */
 }
